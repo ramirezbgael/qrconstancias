@@ -3,6 +3,10 @@
   command = "npm run build"
   publish = ".next"
 
+# Configuración específica para Next.js
+[build.environment]
+  NODE_VERSION = "18"
+
 # Plugin de Next.js para Netlify
 [[plugins]]
   package = "@netlify/plugin-nextjs"

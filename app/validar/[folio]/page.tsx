@@ -9,7 +9,7 @@ import type { Constancia } from '@/lib/constancias'
 export default function ValidarFolioPage() {
   const params = useParams()
   const router = useRouter()
-  const folio = params.folio as string
+  const folio = (params?.folio as string) || ''
   const [constancia, setConstancia] = useState<Constancia | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

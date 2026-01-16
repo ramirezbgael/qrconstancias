@@ -143,10 +143,27 @@ Si prefieres hardcodear la URL, modifica `lib/constancias.ts` para usar la URL d
 
 ## 🐛 Solución de Problemas
 
-### Error: "Build failed"
-- Verifica que todas las dependencias estén en `package.json`
-- Revisa los logs de build en Netlify para ver el error específico
-- Asegúrate de que `netlify.toml` esté configurado correctamente
+### Error: "Build failed" o "params should be awaited"
+
+**Solución 1: Configurar Node.js 18 en Netlify**
+
+1. En Netlify, ve a **Site settings** > **Build & deploy** > **Environment**
+2. Agrega una variable de entorno:
+   - **Key**: `NODE_VERSION`
+   - **Value**: `18`
+3. O edita `netlify.toml` y ya incluye `NODE_VERSION = "18"`
+
+**Solución 2: Verificar dependencias**
+
+Asegúrate de que `@netlify/plugin-nextjs` esté instalado. En algunos casos puede no ser necesario si Netlify detecta Next.js automáticamente.
+
+**Solución 3: Limpiar build cache**
+
+1. En Netlify: **Deploys** > **Trigger deploy** > **Clear cache and deploy site**
+
+**Solución 4: Verificar errores específicos**
+
+Revisa los logs completos de build en Netlify para ver el error exacto. Busca líneas que digan "Error:" o "Failed:"
 
 ### Error: "Missing environment variables"
 - Verifica que todas las variables de entorno estén configuradas
