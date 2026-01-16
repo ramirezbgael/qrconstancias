@@ -78,7 +78,7 @@ export async function crearConstancia(
       .from('constancias')
       .upload(filePath, pdfBytes, {
         contentType: 'application/pdf',
-        upsert: false,
+        upsert: true, // Permitir sobrescribir si el archivo ya existe
       })
     
     if (uploadError) {
