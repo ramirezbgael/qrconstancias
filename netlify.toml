@@ -7,7 +7,7 @@
 [build.environment]
   NODE_VERSION = "18"
   # Omitir estas claves del escaneo de secretos (están diseñadas para ser públicas en Next.js)
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_APP_URL"
 
 # Plugin de Next.js para Netlify
 [[plugins]]
