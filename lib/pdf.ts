@@ -31,13 +31,15 @@ export async function generateConstanciaPDF(
 
   try {
     // Cargar desde la ruta pública
+    // En el cliente: usar ruta relativa
+    // En el servidor: usar baseUrl si está disponible, sino ruta relativa
     const templateUrl = typeof window !== 'undefined' 
       ? '/constancia.pdf' 
-      : `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/constancia.pdf`
+      : (baseUrl ? `${baseUrl}/constancia.pdf` : '/constancia.pdf')
     
     const response = await fetch(templateUrl)
     if (!response.ok) {
-      throw new Error('No se pudo cargar la plantilla PDF')
+      throw new Error(`No se pudo cargar la plantilla PDF: ${response.status}`)
     }
     const arrayBuffer = await response.arrayBuffer()
     templateBytes = new Uint8Array(arrayBuffer)
