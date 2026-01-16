@@ -160,6 +160,13 @@ export default function ValidarFolioPage() {
               </div>
             </div>
 
+            {constancia.calificacion && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Calificación</label>
+                <p className="text-lg text-gray-800">{constancia.calificacion}</p>
+              </div>
+            )}
+
             {constancia.observaciones && (
               <div>
                 <label className="text-sm font-medium text-gray-500">Observaciones</label>

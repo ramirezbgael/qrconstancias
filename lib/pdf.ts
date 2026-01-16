@@ -1,5 +1,6 @@
 /**
  * Utilidades para generar PDFs de constancias
+ * Usa una plantilla base y rellena los campos
  */
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { generateQRCodeDataURL } from './qr'
@@ -10,11 +11,12 @@ export interface ConstanciaData {
   curso: string
   duracionHoras: number
   fecha: string
+  calificacion?: string
   observaciones?: string
 }
 
 /**
- * Generar PDF de constancia
+ * Generar PDF de constancia usando la plantilla base
  * @param data - Datos de la constancia
  * @param baseUrl - URL base de la aplicación (para el QR)
  * @returns Promise<Uint8Array> - PDF generado
@@ -23,211 +25,230 @@ export async function generateConstanciaPDF(
   data: ConstanciaData,
   baseUrl: string
 ): Promise<Uint8Array> {
-  // Crear nuevo documento PDF
-  const pdfDoc = await PDFDocument.create()
-  
-  // Agregar una página
-  const page = pdfDoc.addPage([595, 842]) // A4 en puntos (210mm x 297mm)
+  // Cargar la plantilla PDF
+  // En Next.js, siempre cargamos desde la ruta pública (funciona en cliente y servidor)
+  let templateBytes: Uint8Array
+
+  try {
+    // Cargar desde la ruta pública
+    const templateUrl = typeof window !== 'undefined' 
+      ? '/constancia.pdf' 
+      : `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/constancia.pdf`
+    
+    const response = await fetch(templateUrl)
+    if (!response.ok) {
+      throw new Error('No se pudo cargar la plantilla PDF')
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    templateBytes = new Uint8Array(arrayBuffer)
+  } catch (error) {
+    console.error('Error cargando plantilla PDF:', error)
+    // Fallback: crear PDF desde cero si no se puede cargar la plantilla
+    return await generateConstanciaPDFFromScratch(data, baseUrl)
+  }
+
+  // Cargar el PDF existente
+  const pdfDoc = await PDFDocument.load(templateBytes)
+  const pages = pdfDoc.getPages()
+  const page = pages[0]
   const { width, height } = page.getSize()
-  
-  // Fuentes
+
+  // Obtener fuentes
   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-  
+  // Usar Helvetica-Bold para textos principales (más bonita y legible)
+
   // Colores
-  const primaryColor = rgb(0.2, 0.4, 0.8)
-  const darkGray = rgb(0.2, 0.2, 0.2)
-  const lightGray = rgb(0.7, 0.7, 0.7)
+  const darkGray = rgb(0, 0, 0)
+  const lightGray = rgb(0.5, 0.5, 0.5)
+
+  // Coordenadas ajustadas según la plantilla
+  // Basadas en el PDF: constancia.pdf
+  // Conversión aproximada: 1 cm ≈ 28 puntos, 0.5 cm ≈ 14 puntos
   
-  // Título principal
-  page.drawText('CONSTANCIA DE PARTICIPACIÓN', {
-    x: width / 2 - 150,
-    y: height - 80,
-    size: 24,
-    font: helveticaBold,
-    color: primaryColor,
-  })
-  
-  // Subtítulo
-  page.drawText('PROTECCIÓN CIVIL', {
-    x: width / 2 - 70,
-    y: height - 110,
-    size: 18,
-    font: helveticaBold,
-    color: darkGray,
-  })
-  
-  // Línea separadora
-  page.drawLine({
-    start: { x: 100, y: height - 130 },
-    end: { x: width - 100, y: height - 130 },
-    thickness: 2,
-    color: primaryColor,
-  })
-  
-  // Texto principal
-  const textY = height - 200
-  const lineHeight = 25
-  const fontSize = 12
-  
-  page.drawText('Por medio de la presente se hace constar que:', {
-    x: 100,
-    y: textY,
-    size: fontSize,
-    font: helveticaFont,
-    color: darkGray,
-  })
-  
-  // Nombre completo
-  page.drawText('Nombre completo:', {
-    x: 100,
-    y: textY - lineHeight * 2,
-    size: fontSize,
-    font: helveticaBold,
-    color: darkGray,
-  })
-  
+  // Nombre completo - medio centímetro abajo (14 puntos) y uno a la derecha (28 puntos), un poquito más grande
   page.drawText(data.nombreCompleto, {
-    x: 100,
-    y: textY - lineHeight * 3,
-    size: fontSize + 2,
-    font: helveticaFont,
+    x: 100 + 28, // Uno a la derecha (28 puntos = 1 cm)
+    y: height - 180 - 14, // Medio centímetro abajo (14 puntos = 0.5 cm)
+    size: 16, // Un poquito más grande (de 15 a 16)
+    font: helveticaBold, // Negrita
     color: darkGray,
   })
-  
-  // Curso
-  page.drawText('Curso:', {
-    x: 100,
-    y: textY - lineHeight * 4.5,
-    size: fontSize,
-    font: helveticaBold,
-    color: darkGray,
-  })
-  
+
+  // Curso - dos centímetros abajo (56 puntos) y uno a la derecha (28 puntos), medio cm más abajo, más grande
   page.drawText(data.curso, {
-    x: 100,
-    y: textY - lineHeight * 5.5,
-    size: fontSize + 2,
-    font: helveticaFont,
+    x: 100 + 28, // Uno a la derecha
+    y: height - 240 - 56 + 14 - 14, // Dos centímetros abajo, medio cm arriba, medio cm más abajo = neto igual
+    size: 15, // Más grande (de 13 a 15)
+    font: helveticaBold, // Negrita para mejor legibilidad
     color: darkGray,
   })
-  
-  // Duración
-  page.drawText(`Duración: ${data.duracionHoras} horas`, {
-    x: 100,
-    y: textY - lineHeight * 7,
-    size: fontSize,
-    font: helveticaFont,
+
+  // Fecha - 2 centímetros arriba (56 puntos) y 2 centímetros a la izquierda (56 puntos), 1 cm más abajo, más grande
+  page.drawText(formatDate(data.fecha), {
+    x: 100 + 140 - 56, // 5 cm a la derecha menos 2 cm a la izquierda = neto 3 cm a la derecha
+    y: height - 290 - 84 + 56 - 28, // 3 cm abajo menos 2 cm arriba menos 1 cm más abajo = neto 2 cm abajo
+    size: 14, // Más grande (de 12 a 14)
+    font: helveticaBold, // Negrita
     color: darkGray,
   })
-  
-  // Fecha
-  page.drawText(`Fecha: ${formatDate(data.fecha)}`, {
-    x: 100,
-    y: textY - lineHeight * 8,
-    size: fontSize,
-    font: helveticaFont,
-    color: darkGray,
-  })
-  
-  // Observaciones (si existen)
-  if (data.observaciones) {
-    page.drawText('Observaciones:', {
-      x: 100,
-      y: textY - lineHeight * 9.5,
-      size: fontSize,
-      font: helveticaBold,
+
+  // Calificación (si existe) - dos centímetros abajo (56 puntos) y 2 cm a la derecha (56 puntos), medio cm arriba, más grande
+  if (data.calificacion) {
+    page.drawText(data.calificacion, {
+      x: 350 - 196 + 56, // 7 cm a la izquierda + 2 cm a la derecha = neto 5 cm a la izquierda
+      y: height - 360 - 56 + 14, // Dos centímetros abajo, medio cm arriba (14 puntos = 0.5 cm)
+      size: 16, // Más grande (de 13 a 16)
+      font: helveticaBold, // Negrita
       color: darkGray,
     })
-    
-    const obsLines = wrapText(data.observaciones, 70)
-    obsLines.forEach((line, index) => {
-      page.drawText(line, {
-        x: 100,
-        y: textY - lineHeight * (10.5 + index),
-        size: fontSize - 1,
-        font: helveticaFont,
-        color: darkGray,
-      })
-    })
   }
-  
-  // Folio
-  page.drawText(`Folio: ${data.folio}`, {
+
+  // Folio (para el registro) - 1 centímetro arriba (28 puntos)
+  page.drawText(data.folio, {
     x: 100,
-    y: textY - lineHeight * 12,
-    size: fontSize - 2,
+    y: height - 480 + 28, // 1 centímetro arriba (28 puntos = 1 cm)
+    size: 10,
     font: helveticaFont,
     color: lightGray,
   })
-  
+
   // Generar QR
   const verificationUrl = `${baseUrl}/validar/${data.folio}`
   const qrDataURL = await generateQRCodeDataURL(verificationUrl)
-  // Convertir data URL a Uint8Array para embedPng
   const qrResponse = await fetch(qrDataURL)
   const qrArrayBuffer = await qrResponse.arrayBuffer()
   const qrImage = await pdfDoc.embedPng(qrArrayBuffer)
-  
-  // Agregar QR en la esquina inferior derecha
-  const qrSize = 120
-  const qrX = width - qrSize - 50
-  const qrY = 100
-  
+
+  // Agregar QR en el recuadro blanco central - 5 centímetros abajo (140 puntos) y 3 cm a la izquierda (84 puntos), 2 cm más abajo, 1 cm más arriba
+  // El recuadro blanco está casi al centro, parte inferior derecha-central
+  // QR al 122% del tamaño original
+  // 2 milímetros a la derecha (≈6 puntos) y 2 milímetros abajo (≈6 puntos)
+  const qrSize = 130 * 1.22 // 122% = 158.6 puntos
+  const qrX = width / 2 - qrSize / 2 + 80 - 84 + 6 // Centrado con desplazamiento, menos 3 cm a la izquierda + 2 mm a la derecha (6 puntos ≈ 2 mm)
+  const qrY = height / 2 - 80 - 140 - 56 + 28 - 6 // 5 centímetros abajo + 2 cm más abajo - 1 cm más arriba - 2 mm más abajo = neto 6 cm + 2 mm abajo
+
   page.drawImage(qrImage, {
     x: qrX,
     y: qrY,
     width: qrSize,
     height: qrSize,
   })
-  
-  // Texto del QR
-  page.drawText('Verificar en:', {
-    x: qrX,
-    y: qrY - 15,
-    size: 8,
-    font: helveticaFont,
-    color: lightGray,
+
+  // Guardar PDF modificado
+  const pdfBytes = await pdfDoc.save()
+  return pdfBytes
+}
+
+/**
+ * Generar PDF desde cero (fallback si no se puede cargar la plantilla)
+ */
+async function generateConstanciaPDFFromScratch(
+  data: ConstanciaData,
+  baseUrl: string
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create()
+  const page = pdfDoc.addPage([595, 842])
+  const { width, height } = page.getSize()
+
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const darkGray = rgb(0.2, 0.2, 0.2)
+
+  // Título
+  page.drawText('CONSTANCIA', {
+    x: width / 2 - 50,
+    y: height - 80,
+    size: 20,
+    font: helveticaBold,
+    color: darkGray,
   })
-  
-  // Firma y sello (área reservada)
-  const firmaY = 200
-  page.drawText('_________________________', {
-    x: width / 2 - 100,
-    y: firmaY,
-    size: fontSize,
+
+  // Nombre
+  page.drawText(`QUE SE OTORGA A`, {
+    x: 100,
+    y: height - 150,
+    size: 12,
     font: helveticaFont,
     color: darkGray,
   })
-  
-  page.drawText('Firma y Sello', {
-    x: width / 2 - 40,
-    y: firmaY - 20,
-    size: fontSize - 2,
+
+  page.drawText(data.nombreCompleto, {
+    x: 100,
+    y: height - 180,
+    size: 14,
+    font: helveticaBold,
+    color: darkGray,
+  })
+
+  // Curso
+  page.drawText('Por haber participado en los cursos de:', {
+    x: 100,
+    y: height - 220,
+    size: 12,
     font: helveticaFont,
-    color: lightGray,
+    color: darkGray,
   })
-  
-  // Texto legal en la parte inferior
-  const legalText = 'Esta constancia es un documento oficial emitido electrónicamente. ' +
-    'Puede ser verificada mediante el código QR o ingresando el folio en el sitio web oficial. ' +
-    'Cualquier modificación invalida este documento.'
-  
-  const legalLines = wrapText(legalText, 80)
-  legalLines.forEach((line, index) => {
-    page.drawText(line, {
-      x: 50,
-      y: 50 - (index * 10),
-      size: 7,
-      font: helveticaFont,
-      color: lightGray,
-      maxWidth: width - 100,
+
+  page.drawText(data.curso, {
+    x: 100,
+    y: height - 250,
+    size: 12,
+    font: helveticaFont,
+    color: darkGray,
+  })
+
+  // Fecha
+  page.drawText(`Fecha: ${formatDate(data.fecha)}`, {
+    x: 100,
+    y: height - 290,
+    size: 12,
+    font: helveticaFont,
+    color: darkGray,
+  })
+
+  // Calificación
+  if (data.calificacion) {
+    page.drawText('CALIFICACION', {
+      x: 100,
+      y: height - 330,
+      size: 12,
+      font: helveticaBold,
+      color: darkGray,
     })
+    page.drawText(data.calificacion, {
+      x: 300,
+      y: height - 330,
+      size: 12,
+      font: helveticaFont,
+      color: darkGray,
+    })
+  }
+
+  // Folio
+  page.drawText(`Registro: ${data.folio}`, {
+    x: 100,
+    y: height - 380,
+    size: 10,
+    font: helveticaFont,
+    color: darkGray,
   })
-  
-  // Generar PDF
-  const pdfBytes = await pdfDoc.save()
-  return pdfBytes
+
+  // QR
+  const verificationUrl = `${baseUrl}/validar/${data.folio}`
+  const qrDataURL = await generateQRCodeDataURL(verificationUrl)
+  const qrResponse = await fetch(qrDataURL)
+  const qrArrayBuffer = await qrResponse.arrayBuffer()
+  const qrImage = await pdfDoc.embedPng(qrArrayBuffer)
+
+  page.drawImage(qrImage, {
+    x: width - 150,
+    y: 50,
+    width: 100,
+    height: 100,
+  })
+
+  return await pdfDoc.save()
 }
 
 /**
@@ -240,25 +261,4 @@ function formatDate(dateString: string): string {
     month: 'long',
     day: 'numeric',
   })
-}
-
-/**
- * Envolver texto en líneas
- */
-function wrapText(text: string, maxWidth: number): string[] {
-  const words = text.split(' ')
-  const lines: string[] = []
-  let currentLine = ''
-  
-  for (const word of words) {
-    if ((currentLine + word).length <= maxWidth) {
-      currentLine += (currentLine ? ' ' : '') + word
-    } else {
-      if (currentLine) lines.push(currentLine)
-      currentLine = word
-    }
-  }
-  if (currentLine) lines.push(currentLine)
-  
-  return lines
 }

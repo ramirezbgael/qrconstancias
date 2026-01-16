@@ -10,6 +10,7 @@ export default function FormularioConstancia() {
     curso: '',
     duracion_horas: 0,
     fecha: new Date().toISOString().split('T')[0],
+    calificacion: '',
     observaciones: '',
   })
   const [loading, setLoading] = useState(false)
@@ -53,6 +54,7 @@ export default function FormularioConstancia() {
           curso: '',
           duracion_horas: 0,
           fecha: new Date().toISOString().split('T')[0],
+          calificacion: '',
           observaciones: '',
         })
       }
@@ -143,6 +145,21 @@ export default function FormularioConstancia() {
               required
             />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="calificacion" className="form-label">
+            Calificación (opcional)
+          </label>
+          <input
+            id="calificacion"
+            name="calificacion"
+            type="text"
+            value={formData.calificacion || ''}
+            onChange={handleChange}
+            className="form-input"
+            placeholder="Ej: 95, Aprobado, Excelente"
+          />
         </div>
 
         <div>

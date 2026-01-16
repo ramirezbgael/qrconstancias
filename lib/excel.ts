@@ -8,6 +8,7 @@ export interface ExcelRow {
   curso: string
   horas: number
   fecha: string
+  calificacion?: string
 }
 
 export interface ExcelValidationResult {
@@ -46,7 +47,7 @@ export async function procesarExcel(
     
     // Convertir a JSON
     const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-      header: ['nombre', 'curso', 'horas', 'fecha'],
+      header: ['nombre', 'curso', 'horas', 'fecha', 'calificacion'],
       range: 1, // Saltar primera fila (encabezados)
     }) as any[]
     
@@ -99,6 +100,7 @@ export async function procesarExcel(
           curso: String(row.curso).trim(),
           horas: horas,
           fecha: fecha ? fecha.toISOString().split('T')[0] : '', // Formato YYYY-MM-DD
+          calificacion: row.calificacion ? String(row.calificacion).trim() : undefined,
         })
       }
     })

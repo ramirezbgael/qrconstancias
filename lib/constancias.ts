@@ -12,6 +12,7 @@ export interface Constancia {
   curso: string
   duracion_horas: number
   fecha: string
+  calificacion?: string
   observaciones?: string
   pdf_url?: string
   qr_url?: string
@@ -23,6 +24,7 @@ export interface NuevaConstancia {
   curso: string
   duracion_horas: number
   fecha: string
+  calificacion?: string
   observaciones?: string
 }
 
@@ -62,6 +64,7 @@ export async function crearConstancia(
         curso: datos.curso,
         duracionHoras: datos.duracion_horas,
         fecha: datos.fecha,
+        calificacion: datos.calificacion,
         observaciones: datos.observaciones,
       },
       baseUrl
@@ -113,6 +116,7 @@ export async function crearConstancia(
         curso: datos.curso,
         duracion_horas: datos.duracion_horas,
         fecha: datos.fecha,
+        calificacion: datos.calificacion || null,
         observaciones: datos.observaciones || null,
         pdf_url: pdfUrl,
       })

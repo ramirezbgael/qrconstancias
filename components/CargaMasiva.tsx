@@ -63,6 +63,7 @@ export default function CargaMasiva() {
         curso: row.curso,
         duracion_horas: row.horas,
         fecha: row.fecha,
+        calificacion: row.calificacion,
         observaciones: undefined,
       }))
 
@@ -106,6 +107,7 @@ export default function CargaMasiva() {
           <li><strong>curso</strong> - Nombre del curso</li>
           <li><strong>horas</strong> - Duración en horas (número)</li>
           <li><strong>fecha</strong> - Fecha del curso (formato fecha Excel o texto)</li>
+          <li><strong>calificacion</strong> - Calificación (opcional, texto o número)</li>
         </ul>
         <p className="text-xs text-gray-500">
           La primera fila debe contener los encabezados. Las filas con datos
@@ -167,6 +169,9 @@ export default function CargaMasiva() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     Fecha
                   </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Calificación
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -183,6 +188,9 @@ export default function CargaMasiva() {
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-900">
                       {row.fecha}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {row.calificacion || '-'}
                     </td>
                   </tr>
                 ))}
