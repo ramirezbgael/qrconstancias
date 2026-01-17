@@ -78,7 +78,7 @@ export async function crearConstancia(
       .from('constancias')
       .upload(filePath, pdfBytes, {
         contentType: 'application/pdf',
-        upsert: true, // Permitir sobrescribir si el archivo ya existe
+        upsert: true,
       })
     
     if (uploadError) {
@@ -147,12 +147,35 @@ export async function crearConstanciasMasivas(
   const errores: any[] = []
   let exitosas = 0
   
-  for (const dato of datos) {
-    const { error } = await crearConstancia(dato, baseUrl)
+  // Procesar cada constancia de forma secuencial para evitar condiciones de carrera
+  for (let i = 0; i < datos.length; i++) {
+    const dato = datos[i]
+    
+    // Crear una copia del dato para evitar problemas de referencia
+    const datoCopia: NuevaConstancia = {
+      nombre_completo: dato.nombre_completo,
+      curso: dato.curso,
+      duracion_horas: dato.duracion_horas,
+      fecha: dato.fecha,
+      calificacion: dato.calificacion,
+      observaciones: dato.observaciones,
+    }
+    
+    console.log(`Procesando constancia ${i + 1}/${datos.length}: ${datoCopia.nombre_completo}`)
+    
+    const { constancia, error } = await crearConstancia(datoCopia, baseUrl)
+    
     if (error) {
-      errores.push({ datos: dato, error })
+      console.error(`Error creando constancia ${i + 1}:`, error)
+      errores.push({ datos: datoCopia, error })
     } else {
+      console.log(`Constancia ${i + 1} creada exitosamente con folio: ${constancia.folio}`)
       exitosas++
+    }
+    
+    // Pequeño delay para evitar problemas de concurrencia en la base de datos
+    if (i < datos.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
   }
   

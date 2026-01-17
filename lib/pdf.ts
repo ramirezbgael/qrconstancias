@@ -58,51 +58,81 @@ export async function generateConstanciaPDF(
   // Obtener fuentes
   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-  // Usar Helvetica-Bold para textos principales (más bonita y legible)
+  
+  // Cargar Poppins desde un CDN que proporcione TTF
+  // Nota: pdf-lib requiere fuentes en formato TTF, no WOFF2
+  let poppinsBold: any = helveticaBold // Fallback por defecto
+  try {
+    // Intentar cargar Poppins Bold desde un servicio que proporcione TTF
+    // Usando GitHub como CDN para el archivo TTF de Poppins
+    const poppinsBoldUrl = 'https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Bold.ttf'
+    const poppinsBoldResponse = await fetch(poppinsBoldUrl)
+    if (poppinsBoldResponse.ok) {
+      const poppinsBoldArrayBuffer = await poppinsBoldResponse.arrayBuffer()
+      poppinsBold = await pdfDoc.embedFont(new Uint8Array(poppinsBoldArrayBuffer))
+      console.log('Poppins Bold cargado exitosamente')
+    } else {
+      console.warn('No se pudo cargar Poppins, usando Helvetica como fallback')
+    }
+  } catch (error) {
+    console.warn('Error cargando Poppins, usando Helvetica como fallback:', error)
+    // Fallback a Helvetica si no se puede cargar Poppins
+  }
 
   // Colores
   const darkGray = rgb(0, 0, 0)
   const lightGray = rgb(0.5, 0.5, 0.5)
+  const blue = rgb(0.13, 0.35, 0.58) // Azul tipo Microsoft Word (#216994) para todos los textos
 
   // Coordenadas ajustadas según la plantilla
   // Basadas en el PDF: constancia.pdf
   // Conversión aproximada: 1 cm ≈ 28 puntos, 0.5 cm ≈ 14 puntos
   
-  // Nombre completo - medio centímetro abajo (14 puntos) y uno a la derecha (28 puntos), un poquito más grande
+  // Nombre completo - medio centímetro abajo (14 puntos) y uno a la derecha (28 puntos), al 115%, Times New Roman, azul
   page.drawText(data.nombreCompleto, {
     x: 100 + 28, // Uno a la derecha (28 puntos = 1 cm)
     y: height - 180 - 14, // Medio centímetro abajo (14 puntos = 0.5 cm)
-    size: 16, // Un poquito más grande (de 15 a 16)
-    font: helveticaBold, // Negrita
-    color: darkGray,
+    size: 16 * 1.15, // 115% del tamaño original (18.4)
+    font: poppinsBold, // Poppins negrita
+    color: blue, // Azul
   })
 
-  // Curso - dos centímetros abajo (56 puntos) y uno a la derecha (28 puntos), medio cm más abajo, más grande
+  // Curso - dos centímetros abajo (56 puntos) y uno a la derecha (28 puntos), medio cm más abajo, al 115%, Times New Roman, azul
   page.drawText(data.curso, {
     x: 100 + 28, // Uno a la derecha
     y: height - 240 - 56 + 14 - 14, // Dos centímetros abajo, medio cm arriba, medio cm más abajo = neto igual
-    size: 15, // Más grande (de 13 a 15)
-    font: helveticaBold, // Negrita para mejor legibilidad
-    color: darkGray,
+    size: 15 * 1.15, // 115% del tamaño original (17.25)
+    font: poppinsBold, // Poppins negrita
+    color: blue, // Azul
   })
 
-  // Fecha - 2 centímetros arriba (56 puntos) y 2 centímetros a la izquierda (56 puntos), 1 cm más abajo, más grande
+  // Duración en horas - después del curso, dos centímetros abajo y uno a la izquierda, Times New Roman, azul
+  const duracionTexto = `Duración: ${data.duracionHoras} horas`
+  page.drawText(duracionTexto, {
+    x: 100 + 28 - 28, // Uno a la izquierda (restar 28 puntos = 1 cm)
+    y: height - 240 - 56 + 14 - 14 - 30 - 56, // Dos centímetros abajo (restar 56 puntos = 2 cm)
+    size: 14,
+    font: poppinsBold, // Poppins negrita
+    color: blue, // Azul
+  })
+
+  // Fecha - 2 centímetros arriba (56 puntos) y 2 centímetros a la izquierda (56 puntos), 1 cm más abajo, más grande, 0.4 cm más arriba, 0.2 cm más abajo, al 140%, Times New Roman, azul
   page.drawText(formatDate(data.fecha), {
     x: 100 + 140 - 56, // 5 cm a la derecha menos 2 cm a la izquierda = neto 3 cm a la derecha
-    y: height - 290 - 84 + 56 - 28, // 3 cm abajo menos 2 cm arriba menos 1 cm más abajo = neto 2 cm abajo
-    size: 14, // Más grande (de 12 a 14)
-    font: helveticaBold, // Negrita
-    color: darkGray,
+    y: height - 290 - 84 + 56 - 28 + 11 - 6, // 3 cm abajo menos 2 cm arriba menos 1 cm más abajo más 0.4 cm arriba menos 0.2 cm más abajo (11 - 6 = 5 puntos neto arriba)
+    size: 14 * 1.40, // 140% del tamaño original (19.6)
+    font: poppinsBold, // Poppins negrita
+    color: blue, // Azul
   })
 
-  // Calificación (si existe) - dos centímetros abajo (56 puntos) y 2 cm a la derecha (56 puntos), medio cm arriba, más grande
+  // Calificación (si existe) - dos centímetros abajo (56 puntos) y 2 cm a la derecha (56 puntos), medio cm arriba, 0.2 cm más abajo, al 120%, Times New Roman, azul
   if (data.calificacion) {
     page.drawText(data.calificacion, {
       x: 350 - 196 + 56, // 7 cm a la izquierda + 2 cm a la derecha = neto 5 cm a la izquierda
-      y: height - 360 - 56 + 14, // Dos centímetros abajo, medio cm arriba (14 puntos = 0.5 cm)
-      size: 16, // Más grande (de 13 a 16)
-      font: helveticaBold, // Negrita
-      color: darkGray,
+      y: height - 360 - 56 + 14 - 6, // Dos centímetros abajo, medio cm arriba, 0.2 cm más abajo (6 puntos ≈ 0.2 cm)
+      size: 16 * 1.20, // 120% del tamaño original (19.2)
+      font: poppinsBold, // Poppins negrita
+      color: blue, // Azul
     })
   }
 
