@@ -88,6 +88,30 @@ export async function generateConstanciaPDF(
   // Basadas en el PDF: constancia.pdf
   // Conversión aproximada: 1 cm ≈ 28 puntos, 0.5 cm ≈ 14 puntos
   
+  // Marca de agua detrás del nombre - dibujar ANTES del nombre para que quede detrás
+  const watermarkText = 'GMORIVERA'
+  const watermarkSize = 60 // Tamaño grande para la marca de agua
+  const watermarkX = 100 + 28 // Misma posición X que el nombre
+  const watermarkY = height - 180 - 14 // Misma posición Y que el nombre
+  
+  // Calcular el ancho del texto para centrarlo mejor
+  const nombreWidth = poppinsBold.widthOfTextAtSize(data.nombreCompleto, 16 * 1.15)
+  const watermarkWidth = poppinsBold.widthOfTextAtSize(watermarkText, watermarkSize)
+  
+  // Calcular el centro del nombre para posicionar la marca de agua
+  const centerX = watermarkX + nombreWidth / 2
+  
+  // Dibujar marca de agua con opacidad muy baja (sin rotación por simplicidad)
+  // La marca de agua se dibuja detrás del nombre (antes de dibujar el nombre)
+  page.drawText(watermarkText, {
+    x: centerX - watermarkWidth / 2 + 56, // Centrar respecto al nombre + 2 cm a la derecha (56 puntos)
+    y: watermarkY - 10, // Ligeramente más abajo que el nombre
+    size: watermarkSize,
+    font: poppinsBold,
+    color: rgb(0.13, 0.35, 0.58), // Mismo azul pero con opacidad
+    opacity: 0.08, // Opacidad muy baja para que sea sutil
+  })
+  
   // Nombre completo - medio centímetro abajo (14 puntos) y uno a la derecha (28 puntos), al 115%, Times New Roman, azul
   page.drawText(data.nombreCompleto, {
     x: 100 + 28, // Uno a la derecha (28 puntos = 1 cm)
