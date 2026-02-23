@@ -15,14 +15,6 @@ export interface ConstanciaData {
   observaciones?: string
 }
 
-/** Textos de pie de constancia (cámbialos aquí o con variables de entorno) */
-const REGISTRO_TEXT =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_REGISTRO) ||
-  '20500600000000L/20500602020000L/0300180/2026'
-const IDENTIFICACION_TEXT =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_IDENTIFICACION) ||
-  'N65BBI2625T8XJ34l/07829/2026'
-
 /**
  * Generar PDF de constancia usando la plantilla base
  * @param data - Datos de la constancia
@@ -173,34 +165,6 @@ export async function generateConstanciaPDF(
     x: 100,
     y: height - 480 + 28, // 1 centímetro arriba (28 puntos = 1 cm)
     size: 10,
-    font: helveticaFont,
-    color: lightGray,
-  })
-
-  // Tapar el pie de la plantilla (Registro / Identificación) en la esquina inferior y dibujar nuestros valores
-  // En PDF, y=0 es abajo; el pie está en el borde inferior de la hoja
-  const footerYLine1 = 98 // primera línea (Registro) a ~3.5 cm del borde inferior
-  const footerYLine2 = 82 // segunda línea (Identificación)
-  const footerBoxY = 65
-  const footerBoxHeight = 50
-  page.drawRectangle({
-    x: 50,
-    y: footerBoxY,
-    width: 480,
-    height: footerBoxHeight,
-    color: rgb(1, 1, 1), // blanco para cubrir el texto de la plantilla
-  })
-  page.drawText(`Registro: ${REGISTRO_TEXT}`, {
-    x: 55,
-    y: footerYLine1,
-    size: 9,
-    font: helveticaFont,
-    color: lightGray,
-  })
-  page.drawText(`Número de Identificación: ${IDENTIFICACION_TEXT}`, {
-    x: 55,
-    y: footerYLine2,
-    size: 9,
     font: helveticaFont,
     color: lightGray,
   })
