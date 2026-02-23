@@ -177,26 +177,29 @@ export async function generateConstanciaPDF(
     color: lightGray,
   })
 
-  // Tapar el pie de la plantilla (Registro / Identificación) y dibujar nuestros valores
-  const footerY = height - 508
-  const footerBoxHeight = 40
+  // Tapar el pie de la plantilla (Registro / Identificación) en la esquina inferior y dibujar nuestros valores
+  // En PDF, y=0 es abajo; el pie está en el borde inferior de la hoja
+  const footerYLine1 = 98 // primera línea (Registro) a ~3.5 cm del borde inferior
+  const footerYLine2 = 82 // segunda línea (Identificación)
+  const footerBoxY = 65
+  const footerBoxHeight = 50
   page.drawRectangle({
-    x: 98,
-    y: footerY - 22,
-    width: 360,
+    x: 50,
+    y: footerBoxY,
+    width: 480,
     height: footerBoxHeight,
     color: rgb(1, 1, 1), // blanco para cubrir el texto de la plantilla
   })
   page.drawText(`Registro: ${REGISTRO_TEXT}`, {
-    x: 100,
-    y: footerY,
+    x: 55,
+    y: footerYLine1,
     size: 9,
     font: helveticaFont,
     color: lightGray,
   })
   page.drawText(`Número de Identificación: ${IDENTIFICACION_TEXT}`, {
-    x: 100,
-    y: footerY - 16,
+    x: 55,
+    y: footerYLine2,
     size: 9,
     font: helveticaFont,
     color: lightGray,
