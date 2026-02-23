@@ -121,13 +121,29 @@ export async function generateConstanciaPDF(
     color: blue, // Azul
   })
 
-  // Curso - dos centímetros abajo (56 puntos) y uno a la derecha (28 puntos), medio cm más abajo, al 115%, Times New Roman, azul
-  page.drawText(data.curso, {
-    x: 100 + 28, // Uno a la derecha
-    y: height - 240 - 56 + 14 - 14, // Dos centímetros abajo, medio cm arriba, medio cm más abajo = neto igual
-    size: 15 * 1.15, // 115% del tamaño original (17.25)
-    font: poppinsBold, // Poppins negrita
-    color: blue, // Azul
+  // Curso - si es muy largo, reducir tamaño y poner en 2 renglones (ancho limitado para que no se salga)
+  // Medio centímetro más arriba (14 pt) para que no se corte con el recuadro
+  const cursoY = height - 240 - 56 + 14 - 14 + 14
+  const cursoX = 100 + 28
+  const cursoSizeNormal = 14 * 1.45   // 145% (≈20.3)
+  const cursoSizeReducido = 10 * 1.45 // 145% (≈14.5)
+  const cursoMaxWidth = 260 // ~9 cm para que quepa en el recuadro
+  const { lines: cursoLines, fontSize: cursoFontSize } = wrapCursoEnDosLineas(
+    data.curso,
+    poppinsBold,
+    cursoSizeNormal,
+    cursoSizeReducido,
+    cursoMaxWidth
+  )
+  const cursoLineHeight = cursoFontSize * 1.3
+  cursoLines.forEach((line, i) => {
+    page.drawText(line, {
+      x: cursoX,
+      y: cursoY - i * cursoLineHeight,
+      size: cursoFontSize,
+      font: poppinsBold,
+      color: blue,
+    })
   })
 
   // Duración en horas - después del curso, dos centímetros abajo y uno a la izquierda, Times New Roman, azul
@@ -140,13 +156,13 @@ export async function generateConstanciaPDF(
     color: blue, // Azul
   })
 
-  // Fecha - 2 centímetros arriba (56 puntos) y 2 centímetros a la izquierda (56 puntos), 1 cm más abajo, más grande, 0.4 cm más arriba, 0.2 cm más abajo, al 140%, Times New Roman, azul
-  page.drawText(formatDate(data.fecha), {
-    x: 100 + 140 - 56, // 5 cm a la derecha menos 2 cm a la izquierda = neto 3 cm a la derecha
-    y: height - 290 - 84 + 56 - 28 + 11 - 6, // 3 cm abajo menos 2 cm arriba menos 1 cm más abajo más 0.4 cm arriba menos 0.2 cm más abajo (11 - 6 = 5 puntos neto arriba)
-    size: 14 * 1.40, // 140% del tamaño original (19.6)
-    font: poppinsBold, // Poppins negrita
-    color: blue, // Azul
+  // Fecha: "Fecha: " + valor; 2 cm más a la izquierda (56 pt)
+  page.drawText(`Fecha: ${formatDate(data.fecha)}`, {
+    x: 100 + 140 - 56 - 56, // 2 cm más a la izquierda que antes
+    y: height - 290 - 84 + 56 - 28 + 11 - 6,
+    size: 14 * 1.40, // 140%
+    font: poppinsBold,
+    color: blue,
   })
 
   // Calificación (si existe) - dos centímetros abajo (56 puntos) y 2 cm a la derecha (56 puntos), medio cm arriba, 0.2 cm más abajo, al 120%, Times New Roman, azul
@@ -246,12 +262,21 @@ async function generateConstanciaPDFFromScratch(
     color: darkGray,
   })
 
-  page.drawText(data.curso, {
-    x: 100,
-    y: height - 250,
-    size: 12,
-    font: helveticaFont,
-    color: darkGray,
+  const fallbackCurso = wrapCursoEnDosLineas(
+    data.curso,
+    helveticaFont,
+    12,
+    10,
+    320
+  )
+  fallbackCurso.lines.forEach((line, i) => {
+    page.drawText(line, {
+      x: 100,
+      y: height - 250 - i * (fallbackCurso.fontSize * 1.25),
+      size: fallbackCurso.fontSize,
+      font: helveticaFont,
+      color: darkGray,
+    })
   })
 
   // Fecha
@@ -305,6 +330,37 @@ async function generateConstanciaPDFFromScratch(
   })
 
   return await pdfDoc.save()
+}
+
+/**
+ * Dividir texto en hasta 2 líneas que quepan en maxWidth (en puntos).
+ * Devuelve { lines, fontSize }.
+ */
+function wrapCursoEnDosLineas(
+  text: string,
+  font: { widthOfTextAtSize: (t: string, s: number) => number },
+  sizeNormal: number,
+  sizeReducido: number,
+  maxWidth: number
+): { lines: string[]; fontSize: number } {
+  const w = font.widthOfTextAtSize(text, sizeNormal)
+  if (w <= maxWidth) return { lines: [text], fontSize: sizeNormal }
+  const words = text.trim().split(/\s+/)
+  if (words.length <= 1) return { lines: [text], fontSize: sizeReducido }
+  let line1 = ''
+  let line2 = ''
+  for (let i = 0; i < words.length; i++) {
+    const candidate = line1 ? line1 + ' ' + words[i] : words[i]
+    if (font.widthOfTextAtSize(candidate, sizeReducido) <= maxWidth) {
+      line1 = candidate
+    } else {
+      line2 = words.slice(i).join(' ')
+      break
+    }
+  }
+  if (!line2) return { lines: [line1], fontSize: sizeReducido }
+  if (!line1) return { lines: [text], fontSize: sizeReducido } // una palabra muy larga
+  return { lines: [line1, line2], fontSize: sizeReducido }
 }
 
 /**
