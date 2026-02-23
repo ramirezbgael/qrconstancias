@@ -183,6 +183,40 @@ export async function crearConstanciasMasivas(
 }
 
 /**
+ * Regenerar el PDF de una constancia existente (usa el formato actual de la plantilla)
+ */
+export async function regenerarPDFConstancia(
+  constancia: Constancia,
+  baseUrl: string
+): Promise<{ error: any }> {
+  try {
+    const pdfBytes = await generateConstanciaPDF(
+      {
+        folio: constancia.folio,
+        nombreCompleto: constancia.nombre_completo,
+        curso: constancia.curso,
+        duracionHoras: constancia.duracion_horas,
+        fecha: constancia.fecha,
+        calificacion: constancia.calificacion ?? undefined,
+        observaciones: constancia.observaciones ?? undefined,
+      },
+      baseUrl
+    )
+    const filePath = `${constancia.folio}.pdf`
+    const { error: uploadError } = await supabase.storage
+      .from('constancias')
+      .upload(filePath, pdfBytes, {
+        contentType: 'application/pdf',
+        upsert: true,
+      })
+    if (uploadError) return { error: uploadError }
+    return { error: null }
+  } catch (error: any) {
+    return { error }
+  }
+}
+
+/**
  * Obtener constancia por folio (pública)
  */
 export async function obtenerConstanciaPorFolio(

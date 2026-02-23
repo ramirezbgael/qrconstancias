@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { listarConstancias } from '@/lib/constancias'
+import { listarConstancias, regenerarPDFConstancia } from '@/lib/constancias'
 import type { Constancia } from '@/lib/constancias'
 
 export default function ListaConstancias() {
   const [constancias, setConstancias] = useState<Constancia[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [regenerandoFolio, setRegenerandoFolio] = useState<string | null>(null)
+  const [mensaje, setMensaje] = useState<string | null>(null)
 
   useEffect(() => {
     cargarConstancias()
@@ -38,6 +40,21 @@ export default function ListaConstancias() {
     })
   }
 
+  const handleRegenerarPDF = async (constancia: Constancia) => {
+    setRegenerandoFolio(constancia.folio)
+    setMensaje(null)
+    setError(null)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    const { error: err } = await regenerarPDFConstancia(constancia, baseUrl)
+    setRegenerandoFolio(null)
+    if (err) {
+      setError(`Error al regenerar PDF (${constancia.folio}): ${err.message || 'Desconocido'}`)
+    } else {
+      setMensaje(`PDF de ${constancia.folio} regenerado con el formato actual.`)
+      cargarConstancias()
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -63,6 +80,11 @@ export default function ListaConstancias() {
         </button>
       </div>
 
+      {mensaje && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          {mensaje}
+        </div>
+      )}
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
@@ -116,27 +138,38 @@ export default function ListaConstancias() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(constancia.created_at)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {constancia.pdf_url ? (
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {constancia.pdf_url ? (
+                        <a
+                          href={constancia.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          PDF
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">Sin PDF</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRegenerarPDF(constancia)}
+                        disabled={regenerandoFolio !== null}
+                        className="px-2 py-1 text-xs font-medium rounded border border-amber-500 text-amber-700 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Regenerar PDF con el formato actual"
+                      >
+                        {regenerandoFolio === constancia.folio ? 'Regenerando…' : 'Regenerar PDF'}
+                      </button>
                       <a
-                        href={constancia.pdf_url}
+                        href={`/validar/${constancia.folio}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 mr-4"
+                        className="text-green-600 hover:text-green-800 underline"
                       >
-                        PDF
+                        Verificar
                       </a>
-                    ) : (
-                      <span className="text-gray-400">Sin PDF</span>
-                    )}
-                    <a
-                      href={`/validar/${constancia.folio}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      Verificar
-                    </a>
+                    </div>
                   </td>
                 </tr>
               ))}
