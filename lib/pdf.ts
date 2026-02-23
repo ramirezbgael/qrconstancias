@@ -15,6 +15,14 @@ export interface ConstanciaData {
   observaciones?: string
 }
 
+/** Textos de pie de constancia (cámbialos aquí o con variables de entorno) */
+const REGISTRO_TEXT =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_REGISTRO) ||
+  '20500600000000L/20500602020000L/0300180/2026'
+const IDENTIFICACION_TEXT =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_IDENTIFICACION) ||
+  'N65BBI2625T8XJ34l/07829/2026'
+
 /**
  * Generar PDF de constancia usando la plantilla base
  * @param data - Datos de la constancia
@@ -165,6 +173,23 @@ export async function generateConstanciaPDF(
     x: 100,
     y: height - 480 + 28, // 1 centímetro arriba (28 puntos = 1 cm)
     size: 10,
+    font: helveticaFont,
+    color: lightGray,
+  })
+
+  // Registro e Identificación (valores configurables con NEXT_PUBLIC_REGISTRO y NEXT_PUBLIC_IDENTIFICACION)
+  const footerY = height - 508
+  page.drawText(`Registro: ${REGISTRO_TEXT}`, {
+    x: 100,
+    y: footerY,
+    size: 9,
+    font: helveticaFont,
+    color: lightGray,
+  })
+  page.drawText(`Número de Identificación: ${IDENTIFICACION_TEXT}`, {
+    x: 100,
+    y: footerY - 16,
+    size: 9,
     font: helveticaFont,
     color: lightGray,
   })
