@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS constancias (
     curso TEXT NOT NULL,
     duracion_horas INTEGER NOT NULL,
     fecha TEXT NOT NULL,  -- YYYY-MM-DD o texto libre (ej. "21 y 22 de feb")
+    calificacion TEXT,   -- ej. "89", "9.2", "Aprobado"
     observaciones TEXT,
     pdf_url TEXT,
     qr_url TEXT,
