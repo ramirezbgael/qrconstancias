@@ -177,8 +177,16 @@ export async function generateConstanciaPDF(
     color: lightGray,
   })
 
-  // Registro e Identificación (valores configurables con NEXT_PUBLIC_REGISTRO y NEXT_PUBLIC_IDENTIFICACION)
+  // Tapar el pie de la plantilla (Registro / Identificación) y dibujar nuestros valores
   const footerY = height - 508
+  const footerBoxHeight = 40
+  page.drawRectangle({
+    x: 98,
+    y: footerY - 22,
+    width: 360,
+    height: footerBoxHeight,
+    color: rgb(1, 1, 1), // blanco para cubrir el texto de la plantilla
+  })
   page.drawText(`Registro: ${REGISTRO_TEXT}`, {
     x: 100,
     y: footerY,
