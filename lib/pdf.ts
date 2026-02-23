@@ -308,10 +308,11 @@ async function generateConstanciaPDFFromScratch(
 }
 
 /**
- * Formatear fecha para mostrar
+ * Formatear fecha para mostrar. Si no es una fecha válida (ej. "21 y 22 de feb"), devuelve el string tal cual.
  */
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
+  if (isNaN(date.getTime())) return dateString
   return date.toLocaleDateString('es-MX', {
     year: 'numeric',
     month: 'long',

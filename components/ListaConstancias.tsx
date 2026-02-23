@@ -30,6 +30,7 @@ export default function ListaConstancias() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) return dateString
     return date.toLocaleDateString('es-MX', {
       year: 'numeric',
       month: 'short',

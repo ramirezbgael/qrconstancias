@@ -72,22 +72,28 @@ export async function procesarExcel(
         rowErrors.push(`Fila ${rowNumber}: Horas debe ser un número válido mayor a 0`)
       }
       
-      // Validar fecha
-      let fecha: Date | null = null
-      if (row.fecha) {
-        // Intentar parsear fecha (Excel puede venir como número o string)
-        if (typeof row.fecha === 'number') {
-          // Excel almacena fechas como números (días desde 1900-01-01)
-          fecha = XLSX.SSF.parse_date_code(row.fecha)
-        } else if (typeof row.fecha === 'string') {
-          fecha = new Date(row.fecha)
-        }
-        
-        if (!fecha || isNaN(fecha.getTime())) {
-          rowErrors.push(`Fila ${rowNumber}: Fecha inválida`)
+      // Fecha: aceptar string libre (ej. "21 y 22 de feb") o fecha parseable
+      let fechaValor: string
+      if (row.fecha === undefined || row.fecha === null || String(row.fecha).trim() === '') {
+        rowErrors.push(`Fila ${rowNumber}: Fecha requerida`)
+        fechaValor = ''
+      } else if (typeof row.fecha === 'number') {
+        // Excel almacena fechas como números (días desde 1900-01-01)
+        const d = XLSX.SSF.parse_date_code(row.fecha)
+        if (d) {
+          fechaValor = `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`
+        } else {
+          fechaValor = String(row.fecha).trim()
         }
       } else {
-        rowErrors.push(`Fila ${rowNumber}: Fecha requerida`)
+        const str = String(row.fecha).trim()
+        const asDate = new Date(str)
+        if (!isNaN(asDate.getTime())) {
+          fechaValor = asDate.toISOString().split('T')[0]
+        } else {
+          // Texto libre: "21 y 22 de feb", etc.
+          fechaValor = str
+        }
       }
       
       // Si hay errores, agregarlos a la lista
@@ -99,7 +105,7 @@ export async function procesarExcel(
           nombre: String(row.nombre).trim(),
           curso: String(row.curso).trim(),
           horas: horas,
-          fecha: fecha ? fecha.toISOString().split('T')[0] : '', // Formato YYYY-MM-DD
+          fecha: fechaValor,
           calificacion: row.calificacion ? String(row.calificacion).trim() : undefined,
         })
       }
@@ -122,11 +128,4 @@ export async function procesarExcel(
       rows: [],
     }
   }
-}
-
-/**
- * Validar formato de fecha
- */
-function isValidDate(date: any): boolean {
-  return date instanceof Date && !isNaN(date.getTime())
 }

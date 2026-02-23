@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS constancias (
     nombre_completo TEXT NOT NULL,
     curso TEXT NOT NULL,
     duracion_horas INTEGER NOT NULL,
-    fecha DATE NOT NULL,
+    fecha TEXT NOT NULL,  -- YYYY-MM-DD o texto libre (ej. "21 y 22 de feb")
     observaciones TEXT,
     pdf_url TEXT,
     qr_url TEXT,
@@ -27,23 +27,25 @@ ALTER TABLE constancias ENABLE ROW LEVEL SECURITY;
 -- ============================================
 -- POLÍTICAS RLS
 -- ============================================
+-- (DROP IF EXISTS permite re-ejecutar este script sin error)
 
+DROP POLICY IF EXISTS "Solo usuarios autenticados pueden insertar constancias" ON constancias;
 -- Política: Solo usuarios autenticados pueden INSERTAR constancias
--- (Esto permite que el admin inserte, pero puedes restringir más si lo necesitas)
 CREATE POLICY "Solo usuarios autenticados pueden insertar constancias"
     ON constancias
     FOR INSERT
     TO authenticated
     WITH CHECK (true);
 
--- Política: Lectura pública SOLO por folio (sin permitir listados)
--- Usamos una función para validar que se está consultando por folio específico
+DROP POLICY IF EXISTS "Lectura pública por folio" ON constancias;
+-- Política: Lectura pública por folio
 CREATE POLICY "Lectura pública por folio"
     ON constancias
     FOR SELECT
     TO anon, authenticated
     USING (true);
 
+DROP POLICY IF EXISTS "Solo usuarios autenticados pueden actualizar" ON constancias;
 -- Política: Solo usuarios autenticados pueden actualizar
 CREATE POLICY "Solo usuarios autenticados pueden actualizar"
     ON constancias
@@ -52,6 +54,7 @@ CREATE POLICY "Solo usuarios autenticados pueden actualizar"
     USING (true)
     WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Solo usuarios autenticados pueden eliminar" ON constancias;
 -- Política: Solo usuarios autenticados pueden eliminar
 CREATE POLICY "Solo usuarios autenticados pueden eliminar"
     ON constancias
