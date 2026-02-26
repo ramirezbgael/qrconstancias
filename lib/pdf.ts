@@ -13,6 +13,8 @@ export interface ConstanciaData {
   fecha: string
   calificacion?: string
   observaciones?: string
+  /** URL completa a validar (para congelar QR sin cambiarlo al regenerar) */
+  qrUrl?: string
 }
 
 /**
@@ -186,7 +188,7 @@ export async function generateConstanciaPDF(
   })
 
   // Generar QR
-  const verificationUrl = `${baseUrl}/validar/${data.folio}`
+  const verificationUrl = data.qrUrl || `${baseUrl}/validar/${data.folio}`
   const qrDataURL = await generateQRCodeDataURL(verificationUrl)
   const qrResponse = await fetch(qrDataURL)
   const qrArrayBuffer = await qrResponse.arrayBuffer()
@@ -316,7 +318,7 @@ async function generateConstanciaPDFFromScratch(
   })
 
   // QR
-  const verificationUrl = `${baseUrl}/validar/${data.folio}`
+  const verificationUrl = data.qrUrl || `${baseUrl}/validar/${data.folio}`
   const qrDataURL = await generateQRCodeDataURL(verificationUrl)
   const qrResponse = await fetch(qrDataURL)
   const qrArrayBuffer = await qrResponse.arrayBuffer()

@@ -28,6 +28,16 @@ export interface NuevaConstancia {
   observaciones?: string
 }
 
+/** Datos editables de una constancia. El folio NUNCA se modifica (el QR y el enlace de verificación se mantienen). */
+export interface ConstanciaEditable {
+  nombre_completo: string
+  curso: string
+  duracion_horas: number
+  fecha: string
+  calificacion?: string
+  observaciones?: string
+}
+
 /**
  * Generar próximo folio automático
  */
@@ -55,6 +65,7 @@ export async function crearConstancia(
   try {
     // Generar folio
     const folio = await generarFolio()
+    const qrUrl = `${baseUrl.replace(/\/+$/, '')}/validar/${folio}`
     
     // Generar PDF
     const pdfBytes = await generateConstanciaPDF(
@@ -66,6 +77,7 @@ export async function crearConstancia(
         fecha: datos.fecha,
         calificacion: datos.calificacion,
         observaciones: datos.observaciones,
+        qrUrl,
       },
       baseUrl
     )
@@ -119,6 +131,7 @@ export async function crearConstancia(
         calificacion: datos.calificacion || null,
         observaciones: datos.observaciones || null,
         pdf_url: pdfUrl,
+        qr_url: qrUrl,
       })
       .select()
       .single()
@@ -183,13 +196,23 @@ export async function crearConstanciasMasivas(
 }
 
 /**
- * Regenerar el PDF de una constancia existente (usa el formato actual de la plantilla)
+ * Regenerar el PDF de una constancia existente (usa el formato actual de la plantilla).
+ * No modifica el folio: el QR y el enlace /validar/{folio} se mantienen igual.
  */
 export async function regenerarPDFConstancia(
   constancia: Constancia,
   baseUrl: string
 ): Promise<{ error: any }> {
   try {
+    // Congelar QR: si no hay qr_url guardado (constancias viejas), lo guardamos una sola vez.
+    let qrUrl = constancia.qr_url
+    if (!qrUrl) {
+      qrUrl = `${baseUrl.replace(/\/+$/, '')}/validar/${constancia.folio}`
+      await supabase
+        .from('constancias')
+        .update({ qr_url: qrUrl })
+        .eq('id', constancia.id)
+    }
     const pdfBytes = await generateConstanciaPDF(
       {
         folio: constancia.folio,
@@ -199,6 +222,7 @@ export async function regenerarPDFConstancia(
         fecha: constancia.fecha,
         calificacion: constancia.calificacion ?? undefined,
         observaciones: constancia.observaciones ?? undefined,
+        qrUrl,
       },
       baseUrl
     )
@@ -214,6 +238,45 @@ export async function regenerarPDFConstancia(
   } catch (error: any) {
     return { error }
   }
+}
+
+/**
+ * Actualizar datos de una constancia existente.
+ * No se modifica el folio (el QR y el enlace de verificación permanecen igual).
+ */
+export async function actualizarConstancia(
+  id: string,
+  datos: ConstanciaEditable
+): Promise<{ constancia: Constancia | null; error: any }> {
+  const { data, error } = await supabase
+    .from('constancias')
+    .update({
+      nombre_completo: datos.nombre_completo,
+      curso: datos.curso,
+      duracion_horas: datos.duracion_horas,
+      fecha: datos.fecha,
+      calificacion: datos.calificacion ?? null,
+      observaciones: datos.observaciones ?? null,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  return { constancia: data as Constancia | null, error }
+}
+
+/**
+ * Actualizar qr_url explícitamente (solo para corregir constancias viejas con localhost).
+ * No cambia el folio.
+ */
+export async function actualizarQrUrlConstancia(
+  id: string,
+  qr_url: string
+): Promise<{ error: any }> {
+  const { error } = await supabase
+    .from('constancias')
+    .update({ qr_url })
+    .eq('id', id)
+  return { error }
 }
 
 /**
